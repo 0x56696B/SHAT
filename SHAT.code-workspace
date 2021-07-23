@@ -1,0 +1,49 @@
+{
+    "folders": [
+        {
+            "name": "Console Interface",
+            "path": "./ConsoleInterface/"
+        }
+    ],
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Build Console Interface",
+                "type": "shell",
+                "command": "cargo",
+                "args": [
+                    "build",
+                    "--manifest-path",
+                    "${workspaceFolder:Console Interface}/Cargo.toml"
+                ],
+                "problemMatcher": [],
+                "group": "build",
+                "dependsOn": []
+            }
+        ]
+    },
+    "settings": {
+        "launch": {
+            "configurations": [
+                {
+                    "name": "Debug Console Interface",
+                    "type": "lldb",
+                    "request": "launch",
+                    "program": "${workspaceFolder:Console Interface}/target/debug/ConsoleInterface",
+                    "console": "externalTerminal",
+                    "preLaunchTask": "Build Console Interface",
+                }
+            ],
+            "compounds": [
+                {
+                    "name": "Launch whole app",
+                    "preLaunchTask": "Build Application",
+                    "configurations": [
+                        "Launch Console Interface"
+                    ]
+                }
+            ],
+        },
+    }
+}

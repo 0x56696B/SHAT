@@ -1,0 +1,3 @@
+mod core;
+
+fn main() {}
