@@ -1,3 +1,0 @@
-mod core;
-
-fn main() {}
