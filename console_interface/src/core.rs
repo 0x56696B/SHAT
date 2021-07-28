@@ -1,29 +1,62 @@
 use crate::db_access;
 use crate::term_control;
 use crossterm::event::Event;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
 use std::io::Stdout;
 use std::sync::mpsc::channel;
-use std::time::Duration;
 use tui::backend::CrosstermBackend;
 use tui::Terminal;
 
 pub fn application_cycle(term: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), i32> {
     let (tx, rx) = channel::<Event>();
-    //Potentially read from config
-    let tick_rate = Duration::from_millis(200);
+    let _input_thread = term_control::create_input_thread(tx.clone());
 
     loop {
-        term_control::draw_interface(term);
+        //Draw interface
+        let drawing_state = term_control::draw_interface(term);
+        if drawing_state.is_err() {
+            break;
+        }
+
+        //TODO: Make asynchronous
+        //Check for input
+        let receive_event = rx.recv();
+
+        //Process input
+        if receive_event.is_ok() {
+            let mut command_code: i32 = 0;
+
+            match receive_event.unwrap() {
+                Event::Key(key) => command_code = process_key_event(key),
+                Event::Resize(..) => continue,
+                Event::Mouse(_) => continue,
+            }
+
+            //Command code processing
+            if command_code == -1 {
+                break;
+            } else {
+                execute_command(command_code);
+            }
+        }
     }
+
+    Ok(())
 }
 
 //TODO: Implement
-// Returns: An error code indicating state of the execution
-// -1: Exit program
-fn execute_command(input: &str) -> i32 {
-    match input {
-        //Commands:
-        ":exit" | ":e" | ":q" => -1,
-        _ => 0,
+fn execute_command(command_code: i32) -> () {
+    ()
+}
+
+fn process_key_event(key: KeyEvent) -> i32 {
+    let mut command_code = 0;
+
+    match key.code {
+        KeyCode::Esc => command_code = -1,
+        _ => command_code = 0,
     }
+
+    command_code
 }
