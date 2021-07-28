@@ -1,6 +1,6 @@
 use crossterm::event::{poll, read, Event};
 use crossterm::terminal::enable_raw_mode;
-use std::io::{Error, Stdout};
+use std::io::Stdout;
 use std::sync::mpsc::Sender;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
@@ -10,11 +10,11 @@ use tui::layout::Layout;
 use tui::layout::{Constraint, Rect};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{self, canvas::*, Paragraph, Table, Tabs};
+use tui::widgets::{self, Paragraph, Tabs};
 use tui::widgets::{Block, Borders};
 use tui::Terminal;
 
-pub fn construct_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, Error> {
+pub fn construct_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, ()> {
     //Don't require Enter from the user
     let raw_mode = enable_raw_mode();
     if raw_mode.is_err() {
@@ -23,31 +23,27 @@ pub fn construct_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, Error>
 
     let stdout = std::io::stdout();
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    terminal.clear()?;
+    let mut terminal = Terminal::new(backend).unwrap();
+    let _cleared = terminal.clear();
 
     Ok(terminal)
 }
 
 //TODO: Finish drawing the interface
-pub fn draw_interface(term: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), std::io::Error> {
-    let username: &str = "Some username";
-
+pub fn draw_interface(term: &mut Terminal<CrosstermBackend<Stdout>>, typed_text: &String) {
     let chunks: Vec<Rect> = config_chunks(&term);
     let menu_bar: Vec<Spans> = config_menu_bar();
 
     let tabs: Tabs = config_tabs(menu_bar);
-    let chat: Paragraph = config_chat();
-    let typing_area: Paragraph = config_typing_area();
+    let chat: Paragraph = config_chat(); //Abstract this
+    let typing_area = config_typing_area(typed_text.to_string());
 
-    term.draw(|f| {
+    let _result = term.draw(|f| {
         // Top to bottom -> 0 to chunks.len()
         f.render_widget(tabs, chunks[0]);
         f.render_widget(chat, chunks[1]);
         f.render_widget(typing_area, chunks[2]);
-    })?;
-
-    Ok(())
+    });
 }
 
 fn config_chat() -> Paragraph<'static> {
@@ -60,8 +56,8 @@ fn config_chat() -> Paragraph<'static> {
         );
 }
 
-fn config_typing_area() -> Paragraph<'static> {
-    return Paragraph::new("Shaba daba dub dub")
+fn config_typing_area(text: String) -> Paragraph<'static> {
+    return Paragraph::new(text)
         .style(Style::default().fg(Color::White))
         .alignment(tui::layout::Alignment::Left)
         .block(
@@ -145,4 +141,8 @@ pub fn create_input_thread(tx: Sender<Event>) -> JoinHandle<()> {
             }
         }
     })
+}
+
+pub fn draw_user_input_char(c: char, typed_text: &String) -> () {
+    ()
 }
