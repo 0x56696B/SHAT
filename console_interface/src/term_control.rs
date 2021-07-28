@@ -5,12 +5,12 @@ use std::sync::mpsc::Sender;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 use tui::backend::CrosstermBackend;
-use tui::layout::Constraint;
 use tui::layout::Direction;
 use tui::layout::Layout;
+use tui::layout::{Constraint, Rect};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{self, canvas::*, Tabs};
+use tui::widgets::{self, canvas::*, Paragraph, Table, Tabs};
 use tui::widgets::{Block, Borders};
 use tui::Terminal;
 
@@ -31,22 +31,76 @@ pub fn construct_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, Error>
 
 //TODO: Finish drawing the interface
 pub fn draw_interface(term: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), std::io::Error> {
+    let username: &str = "Some username";
+
+    let chunks: Vec<Rect> = config_chunks(&term);
+    let menu_bar: Vec<Spans> = config_menu_bar();
+
+    let tabs: Tabs = config_tabs(menu_bar);
+    let chat: Paragraph = config_chat();
+    let typing_area: Paragraph = config_typing_area();
+
+    term.draw(|f| {
+        // Top to bottom -> 0 to chunks.len()
+        f.render_widget(tabs, chunks[0]);
+        f.render_widget(chat, chunks[1]);
+        f.render_widget(typing_area, chunks[2]);
+    })?;
+
+    Ok(())
+}
+
+fn config_chat() -> Paragraph<'static> {
+    return Paragraph::new("Chat sits here")
+        .style(Style::default().add_modifier(Modifier::BOLD))
+        .block(
+            Block::default()
+                .border_style(Style::default())
+                .borders(Borders::ALL),
+        );
+}
+
+fn config_typing_area() -> Paragraph<'static> {
+    return Paragraph::new("Shaba daba dub dub")
+        .style(Style::default().fg(Color::White))
+        .alignment(tui::layout::Alignment::Left)
+        .block(
+            Block::default()
+                .border_style(Style::default())
+                .borders(Borders::ALL)
+                .title("Type here")
+                .border_type(widgets::BorderType::Rounded),
+        );
+}
+
+fn config_chunks(term: &&mut Terminal<CrosstermBackend<Stdout>>) -> Vec<Rect> {
     let size = term.size().unwrap();
     let vert_constrains = [
-        Constraint::Length(3),
-        Constraint::Min(2),
-        Constraint::Length(3),
-        // Constraint::Ratio(70, 20),
+        Constraint::Length(3), //Menu bar
+        Constraint::Min(2),    //Chat
+        Constraint::Length(3), //Typing area
     ]
     .as_ref();
-    let chunks = Layout::default()
+
+    return Layout::default()
         .direction(Direction::Vertical)
-        .margin(2)
+        .margin(1)
         .constraints(vert_constrains)
         .split(size);
+}
 
+fn config_tabs(menu_bar: Vec<Spans>) -> Tabs {
+    return Tabs::new(menu_bar)
+        .block(Block::default().title("Menu").borders(Borders::ALL))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(Style::default().fg(Color::Blue))
+        .divider(Span::raw("|"));
+}
+
+fn config_menu_bar() -> Vec<Spans<'static>> {
     let menu_titles = vec!["Friends", "Quit"];
-    let menu_bar = menu_titles
+
+    return menu_titles
         .iter()
         .map(|t| {
             let (first, rest) = t.split_at(1);
@@ -61,33 +115,6 @@ pub fn draw_interface(term: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(
             ])
         })
         .collect();
-
-    let tabs = Tabs::new(menu_bar)
-        .block(Block::default().title("Menu").borders(Borders::ALL))
-        .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().fg(Color::Blue))
-        .divider(Span::raw("|"));
-
-    let chat_panel = tui::widgets::Paragraph::new("Shaba daba dub dub")
-        .style(Style::default().fg(Color::White))
-        .alignment(tui::layout::Alignment::Left)
-        .block(
-            Block::default()
-                .border_style(Style::default())
-                .borders(Borders::ALL)
-                .title("Type here")
-                .border_type(widgets::BorderType::Rounded),
-        );
-
-    term.draw(|f| {
-        f.render_widget(chat_panel, chunks[2]);
-        f.render_widget(tabs, chunks[0]);
-    })?;
-
-    // let menu_titles = vec!["People", "Quit"];
-    // let mut active_menu_item = MenuItem::Home;
-
-    Ok(())
 }
 
 pub fn create_input_thread(tx: Sender<Event>) -> JoinHandle<()> {
