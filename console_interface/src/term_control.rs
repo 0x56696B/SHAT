@@ -30,12 +30,16 @@ pub fn construct_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, ()> {
 }
 
 //TODO: Finish drawing the interface
-pub fn draw_interface(term: &mut Terminal<CrosstermBackend<Stdout>>, typed_text: &String) {
+pub fn draw_interface(
+    term: &mut Terminal<CrosstermBackend<Stdout>>,
+    typed_text: &String,
+    chat_text: &String,
+) {
     let chunks: Vec<Rect> = config_chunks(&term);
     let menu_bar: Vec<Spans> = config_menu_bar();
 
     let tabs: Tabs = config_tabs(menu_bar);
-    let chat: Paragraph = config_chat(); //Abstract this
+    let chat: Paragraph = config_chat(chat_text);
     let typing_area = config_typing_area(typed_text.to_string());
 
     let _result = term.draw(|f| {
@@ -46,8 +50,38 @@ pub fn draw_interface(term: &mut Terminal<CrosstermBackend<Stdout>>, typed_text:
     });
 }
 
-fn config_chat() -> Paragraph<'static> {
-    return Paragraph::new("Chat sits here")
+pub fn create_input_thread(tx: Sender<Event>) -> JoinHandle<()> {
+    thread::spawn(move || {
+        let mut keyboard_timer = Instant::now();
+
+        loop {
+            let poll = poll(Duration::from_millis(200));
+
+            if poll.is_ok() {
+                let event = read();
+
+                if event.is_ok() {
+                    if let Event::Key(key) = event.unwrap() {
+                        let duration = Instant::now().duration_since(keyboard_timer).as_millis();
+
+                        if duration >= 20 {
+                            let sended = tx.send(Event::Key(key));
+
+                            if sended.is_err() {
+                                break;
+                            }
+
+                            keyboard_timer = Instant::now();
+                        }
+                    }
+                }
+            }
+        }
+    })
+}
+
+fn config_chat(chat_text: &String) -> Paragraph {
+    return Paragraph::new(chat_text.as_str())
         .style(Style::default().add_modifier(Modifier::BOLD))
         .block(
             Block::default()
@@ -111,38 +145,4 @@ fn config_menu_bar() -> Vec<Spans<'static>> {
             ])
         })
         .collect();
-}
-
-pub fn create_input_thread(tx: Sender<Event>) -> JoinHandle<()> {
-    thread::spawn(move || {
-        let mut keyboard_timer = Instant::now();
-
-        loop {
-            let poll = poll(Duration::from_millis(200));
-
-            if poll.is_ok() {
-                let event = read();
-
-                if event.is_ok() {
-                    if let Event::Key(key) = event.unwrap() {
-                        let duration = Instant::now().duration_since(keyboard_timer).as_millis();
-
-                        if duration >= 20 {
-                            let sended = tx.send(Event::Key(key));
-
-                            if sended.is_err() {
-                                break;
-                            }
-
-                            keyboard_timer = Instant::now();
-                        }
-                    }
-                }
-            }
-        }
-    })
-}
-
-pub fn draw_user_input_char(c: char, typed_text: &String) -> () {
-    ()
 }

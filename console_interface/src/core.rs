@@ -1,5 +1,7 @@
+use crate::db_access;
 use crate::term_control;
 use crate::AppState;
+use crate::WinState;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -17,13 +19,17 @@ pub fn application_cycle(
 ) -> Result<(), i32> {
     let (tx, rx) = channel::<Event>();
     let _input_thread = term_control::create_input_thread(tx.clone());
+    app_state.window_state = WinState::Chatting;
 
     loop {
-        //Draw interface
-        let _drawing_state = term_control::draw_interface(term, &mut app_state.typed_text);
+        //Fetch current chat
+        let chat_text = db_access::fetch(&app_state.chat_friend).unwrap_or_default();
 
-        //TODO: Make asynchronous
-        //Check for input
+        //Draw interface
+        let _drawing_state =
+            term_control::draw_interface(term, &mut app_state.typed_text, &chat_text);
+
+        //Check for input (non-blocking)
         let receive_event = rx.try_recv();
 
         //Process input
@@ -60,6 +66,29 @@ fn process_key_event(key: KeyEvent, app_state: &mut AppState) -> () {
             let _popped_char = app_state.typed_text.pop();
             ()
         }
+        KeyCode::Enter => execute_enter(app_state),
         _ => (),
+    }
+}
+
+fn execute_enter(app_state: &mut AppState) {
+    match app_state.window_state {
+        WinState::Chatting => {
+            let result = db_access::push(
+                &app_state.typed_text,
+                &app_state.username,
+                &app_state.chat_friend,
+            );
+            if result.is_ok() {
+                app_state.typed_text = "".to_string()
+            } else {
+                app_state.typed_text = result.unwrap_err().to_string()
+            }
+        }
+        WinState::Menubar => todo!(),
+        WinState::Friends => todo!(),
+
+        WinState::Error => todo!(),
+        WinState::None => todo!(),
     }
 }
