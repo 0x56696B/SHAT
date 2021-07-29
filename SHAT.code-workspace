@@ -3,7 +3,11 @@
         {
             "name": "Console Interface",
             "path": "./console_interface/"
-        }
+        },
+        {
+            "name": "Database API",
+            "path": "./database_api/"
+        },
     ],
     "tasks": {
         "version": "2.0.0",
