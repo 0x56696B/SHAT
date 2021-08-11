@@ -1,8 +1,4 @@
-use time::Date;
-
-pub struct Message {
-    pub id: String,
-    pub sender_name: String,
-    pub receiver_name: String,
-    pub date_created: Date,
-}
+pub mod db_access;
+pub mod dto_s;
+pub mod endpoints;
+pub mod models;

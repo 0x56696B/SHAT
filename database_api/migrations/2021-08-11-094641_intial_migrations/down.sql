@@ -1,0 +1,5 @@
+DROP TABLE People;
+
+DROP TABLE Messages;
+
+DROP TABLE Chat;
