@@ -13,7 +13,7 @@ pub struct Message {
 }
 
 impl From<MessageDTO> for Message {
-    fn from(messageDTO: MessageDTO) -> Self {
+    fn from(_message_dto: MessageDTO) -> Self {
         todo!()
     }
 }

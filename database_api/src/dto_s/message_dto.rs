@@ -9,7 +9,7 @@ pub struct MessageDTO {
 }
 
 impl From<Message> for MessageDTO {
-    fn from(message: Message) -> Self {
+    fn from(_message: Message) -> Self {
         todo!()
     }
 }
