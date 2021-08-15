@@ -13,7 +13,14 @@ pub struct Message {
 }
 
 impl From<MessageDTO> for Message {
-    fn from(_message_dto: MessageDTO) -> Self {
-        todo!()
+    fn from(message_dto: MessageDTO) -> Self {
+        Message {
+            id: message_dto.id,
+            issuer: Person {
+                id: message_dto.issuer_id,
+                username: message_dto.issuer,
+            },
+            message: message_dto.message,
+        }
     }
 }
