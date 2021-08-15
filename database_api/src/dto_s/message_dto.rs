@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MessageDTO {
     pub id: i32,
+    pub issuer_id: i32,
     pub issuer: String,
     pub message: String,
 }

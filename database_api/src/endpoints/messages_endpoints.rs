@@ -1,18 +1,33 @@
-use actix_web::{get, post, web::Json, HttpRequest, HttpResponse};
+use actix_web::{
+    get, post,
+    web::{self, Json},
+    HttpRequest, HttpResponse,
+};
+use diesel::Connection;
 
-use crate::{dto_s::message_dto::MessageDTO, models::message::Message};
+use crate::{
+    app_state::AppState,
+    db_access::{db_queries, db_resources::DbResources},
+    dto_s::message_dto::MessageDTO,
+    models::message::Message,
+};
 
 #[post("/send_message")]
-pub async fn send_message(message: Json<MessageDTO>, _req: HttpRequest) -> HttpResponse {
+pub async fn send_message(
+    message: Json<MessageDTO>,
+    _req: HttpRequest,
+    data: web::Data<AppState>,
+) -> HttpResponse {
     let msg: Message = message.0.into();
 
-    HttpResponse::Ok().json(msg.message)
+    //TODO: Query person info and populate Message struct
 
-    // let result = db_queries::insert_message(msg).await;
-    // match result {
-    //     Ok(responce) => responce,
-    //     Err(err) => todo!(),
-    // }
+    //Database query
+    let result = db_queries::insert_message(msg, data.db_recourses.db_conn).await;
+    match result {
+        Ok(responce) => responce,
+        Err(err) => HttpResponse::BadRequest().body(err.to_string()),
+    }
 }
 
 #[get("/chat")]
