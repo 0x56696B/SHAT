@@ -12,12 +12,7 @@ pub async fn send_message(message: Json<MessageDTO>, req: HttpRequest) -> HttpRe
     //TODO: Query person info and populate Message struct
 
     //Database query
-    let result = db_queries::insert_message(msg, req).await;
-
-    match result {
-        Ok(success) => success,
-        Err(err) => err,
-    }
+    return db_queries::insert_message(msg, req).await;
 }
 
 #[get("/chat")]
