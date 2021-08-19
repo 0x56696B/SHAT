@@ -1,3 +1,2 @@
-pub mod chat;
-pub mod message;
-pub mod person;
+pub mod pure;
+pub mod dto_s;

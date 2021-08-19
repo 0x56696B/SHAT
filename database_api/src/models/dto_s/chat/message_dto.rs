@@ -1,5 +1,6 @@
-use crate::models::message::Message;
 use serde::{Deserialize, Serialize};
+
+use crate::models::pure::chat::message::Message;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MessageDTO {

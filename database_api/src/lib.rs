@@ -1,5 +1,4 @@
 pub mod app_state;
-pub mod db_access;
-pub mod dto_s;
+pub mod database;
 pub mod endpoints;
 pub mod models;
