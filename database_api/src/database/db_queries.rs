@@ -2,18 +2,14 @@ use actix_web::{web::Data, HttpRequest, HttpResponse};
 
 use crate::{
     app_state::AppState,
-    database::query_constructor::query_constructor::{construct_operation, DbOperation},
+    database::{
+        db_setup::{establish_db_connection, spawn_connection},
+        query_constructor::query_constructor::{construct_operation, DbOperation},
+    },
     models::pure::chat::message::Message,
 };
 
-pub async fn insert_message(message: Message, req: HttpRequest) -> HttpResponse {
-    let data_opt = req.app_data::<Data<AppState>>();
-    if data_opt.is_none() {
-        return HttpResponse::InternalServerError().body("Unable to get application data!");
-    }
-
-    let client = &data_opt.unwrap().db_recourses.client;
-
+pub async fn insert_message(message: Message, _req: HttpRequest) -> HttpResponse {
     //INSERT INTO {MESSAGES(all rows)} VALUES ({all values});
     let table: String = String::from("messages(id, issuer, message)");
     let mut items: Vec<String> = Vec::with_capacity(3);
@@ -22,13 +18,21 @@ pub async fn insert_message(message: Message, req: HttpRequest) -> HttpResponse 
     items.push(message.message); //Message: Got from the user
 
     let query: String = construct_operation(DbOperation::Insert, Some(table), Some(items), None);
-    match client.prepare(query.as_str()).await {
-        Ok(_) => HttpResponse::Created().body("Message inserted."),
-        Err(err) => HttpResponse::BadRequest().body(format!(
-            "Unable to prepare database operation! Err: {}",
-            err
-        )),
-    }
+
+    let db_connection = establish_db_connection().await;
+    spawn_connection(db_connection.1);
+
+    let rows = db_connection.0.simple_query(&query).await?;
+    let rows_affected = rows[0].get(0);
+    Ok(HttpResponse::Created().body(format!("Rows affected: {}", rows_affected)));
+
+    // match db_connection.0.prepare(query.as_str()).await {
+    //     Ok(_) => HttpResponse::Created().body("Message inserted."),
+    //     Err(err) => HttpResponse::BadRequest().body(format!(
+    //         "Unable to prepare database operation! Err: {}",
+    //         err
+    //     )),
+    // }
 }
 
 // pub async fn query_chat(chat: Chat) -> Result<HttpResponse, Error> {

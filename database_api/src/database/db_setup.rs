@@ -10,3 +10,11 @@ pub async fn establish_db_connection() -> (Client, Connection<Socket, NoTlsStrea
         .await
         .expect("Unable to connect to database")
 }
+
+pub async fn spawn_connection(connection: Connection<Socket, NoTlsStream>) {
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("Connection error: {}", e);
+        }
+    });
+}
